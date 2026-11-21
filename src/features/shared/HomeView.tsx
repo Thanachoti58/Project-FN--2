@@ -1,12 +1,12 @@
 'use client';
 /**
  * HOME — หน้าหลักของทุกบทบาท
- *  hero + KPI + สถานะเอกสาร + การ์ดเฉพาะบทบาท + กิจกรรมล่าสุด + ตารางงานของบทบาทนั้น
+ *  hero + KPI + การ์ดเฉพาะบทบาท + กิจกรรมล่าสุด + ตารางงานของบทบาทนั้น
  */
 import { useRouter } from 'next/navigation';
 import type { Status } from '@/types';
 import type { IconName } from '@/components/ui/Icon';
-import { ALL_STATUSES, IN_REVIEW, ROLES, STATUS } from '@/constants';
+import { IN_REVIEW, ROLES, STATUS } from '@/constants';
 import { useStore } from '@/hooks/useStore';
 import { byStatus, crossCheck, isIncomplete, mine, scopeBonds } from '@/store/selectors';
 import { nf, today } from '@/lib/format';
@@ -101,15 +101,10 @@ export function HomeView() {
   if (role === 'admin') {
     sideTitle = 'พนักงาน';
     const staff = data.U.filter((u) => u.r !== 'company');
-    const cust = data.U.filter((u) => u.r === 'company');
     side = (
       <>
         {(['admin', 'officer', 'manager'] as const).map((k) => (
           <BarRow key={k} label={ROLES[k].name} value={staff.filter((u) => u.r === k).length} total={staff.length} color={G} />
-        ))}
-        <h3 className="!mt-4">ผู้ใช้บริษัท</h3>
-        {data.CO.map((co) => (
-          <BarRow key={co} label={co} value={cust.filter((u) => u.co === co).length} total={cust.length} color="#38BDF8" />
         ))}
       </>
     );
@@ -147,8 +142,6 @@ export function HomeView() {
     side = q.length ? q.map((d) => <FeedRow key={d.id} title={`${d.symbol} · ${d.n}`} sub={<StatusBadge status={d.s} />} color={STATUS[d.s][1]} />) : <p className="m-0 text-muted">ไม่มีรายการรอ</p>;
   }
 
-  const bars = ALL_STATUSES.filter((s) => n(s));
-
   return (
     <div>
       {/* ---------- HERO ---------- */}
@@ -177,12 +170,8 @@ export function HomeView() {
         ))}
       </KpiGrid>
 
-      {/* ---------- สถานะเอกสาร + การ์ดเฉพาะบทบาท ---------- */}
+      {/* ---------- การ์ดเฉพาะบทบาท ---------- */}
       <div className="grid grid-cols-[repeat(auto-fit,minmax(320px,1fr))] gap-4">
-        <Card $wide>
-          <h3>สถานะเอกสาร</h3>
-          {bars.length ? bars.map((s) => <BarRow key={s} label={STATUS[s][0]} value={n(s)} total={scope.length || 1} color={STATUS[s][1]} />) : <p className="m-0 text-muted">ยังไม่มีเอกสาร</p>}
-        </Card>
         <Card $wide>
           <h3>{sideTitle}</h3>
           {side}
