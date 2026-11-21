@@ -35,7 +35,8 @@ const k = (label: string, value: string | number, color: string, icon: IconName)
 
 export const VIEW_KPIS: Record<string, () => Kpi[]> = {
   users: () => [
-    k('ผู้ใช้ทั้งหมด', store.data.U.length, BLUE, 'user'),
+    k('พนักงาน', store.data.U.filter((u) => u.r !== 'company').length, BLUE, 'user'),
+    k('ผู้ใช้บริษัท', store.data.U.filter((u) => u.r === 'company').length, PURPLE, 'building'),
     k('ใช้งานอยู่', store.data.U.filter((u) => u.on).length, G, 'check'),
     k('ปิดใช้งาน', store.data.U.filter((u) => !u.on).length, GRAY, 'clock'),
     k('คำเชิญรอตอบรับ', store.data.INV.length, AMBER, 'send'),
