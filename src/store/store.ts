@@ -111,8 +111,8 @@ export function hydrate(): void {
   });
   try {
     const email = localStorage.getItem(STORAGE_KEYS.session) || sessionStorage.getItem(STORAGE_KEYS.session);
-    const u = email && store.data.U.find((x) => (x.email || '').toLowerCase() === email);
-    if (u && u.on) {
+    const u = email && store.data.U.find((x) => (x.email || '').toLowerCase() === email && x.on);
+    if (u) {
       store.session = { user: u, role: u.r, co: u.co || store.data.CO[0] };
     }
   } catch {

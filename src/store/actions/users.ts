@@ -7,15 +7,43 @@ import { fmtDT } from '@/lib/format';
 import { emit, store } from '../store';
 import { logActivity, toast } from './ui';
 
-const exists = (email: string) => store.data.U.some((u) => (u.email || '').toLowerCase() === email);
+const normalizeName = (name: string) => name.trim().replace(/\s+/g, ' ').toLowerCase();
+const normalizeEmail = (email: string) => email.trim().toLowerCase();
+const userEmails = (user: { email: string; mail?: string }) =>
+  [user.email, user.mail].filter((email): email is string => Boolean(email)).map(normalizeEmail);
+const hasEmail = (user: { email: string; mail?: string }, email: string) => userEmails(user).includes(email);
+const exists = (email: string) => store.data.U.some((u) => hasEmail(u, email));
 
 /** เพิ่มเจ้าหน้าที่ภายในโดยตรง — คืน true ถ้าเพิ่มสำเร็จ */
 export function addStaff(name: string, email: string, role: Role): boolean {
-  const em = email.trim().toLowerCase();
+  const nm = name.trim();
+  const em = normalizeEmail(email);
   if (role === 'company') return toast('ผู้ใช้บริษัทต้องใช้การชวนผู้ใช้'), false;
-  if (exists(em)) return toast('อีเมลนี้มีในระบบแล้ว'), false;
-  store.data.U.push({ n: name.trim(), email: em, r: role, co: '', on: true, added: true });
-  logActivity(`เพิ่มเจ้าหน้าที่ ${name} (${ROLES[role].name})`, 'sys');
+  const matchingEmail = store.data.U.filter((u) => hasEmail(u, em));
+  if (matchingEmail.some((u) => u.r === 'company')) {
+    return toast('อีเมลนี้เป็นบัญชีผู้ใช้บริษัท ไม่สามารถเพิ่มเป็นเจ้าหน้าที่ได้'), false;
+  }
+  const existing = matchingEmail.find((u) => normalizeName(u.n) === normalizeName(nm));
+  if (matchingEmail.length && !existing) return toast('อีเมลนี้มีในระบบแล้ว แต่ชื่อไม่ตรงกับบัญชีเดิม'), false;
+
+  if (existing) {
+    matchingEmail.forEach((u) => { u.on = false; });
+    existing.n = nm;
+    existing.email = em;
+    if (existing.mail && normalizeEmail(existing.mail) === em) existing.mail = undefined;
+    existing.r = role;
+    existing.co = '';
+    existing.on = true;
+    existing.added = true;
+    if (store.session.user === existing) store.session.role = role;
+    logActivity(`เปิดใช้งานเจ้าหน้าที่ ${nm} ใหม่ (${ROLES[role].name})`, 'sys');
+    toast('เปิดใช้งานบัญชีเดิมและกำหนด Role ใหม่แล้ว');
+    emit();
+    return true;
+  }
+
+  store.data.U.push({ n: nm, email: em, r: role, co: '', on: true, added: true });
+  logActivity(`เพิ่มเจ้าหน้าที่ ${nm} (${ROLES[role].name})`, 'sys');
   toast('เพิ่มเจ้าหน้าที่แล้ว — ล็อกอินด้วยอีเมลนี้ รหัสผ่าน pass');
   emit();
   return true;
@@ -66,6 +94,12 @@ export function acceptInvite(i: number): void {
 export function toggleUser(i: number): void {
   const u = store.data.U[i];
   u.on = !u.on;
+  if (u.on) {
+    const emails = userEmails(u);
+    store.data.U.forEach((other, index) => {
+      if (index !== i && userEmails(other).some((email) => emails.includes(email))) other.on = false;
+    });
+  }
   logActivity(`${u.on ? 'เปิด' : 'ปิด'}ผู้ใช้ ${u.n}`, 'sys');
   emit();
 }
