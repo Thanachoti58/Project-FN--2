@@ -61,7 +61,8 @@ export function HomeView() {
   /* ---------- KPI ตามบทบาท ---------- */
   const tiles: Record<typeof role, Tile[]> = {
     admin: [
-      ['ผู้ใช้งานทั้งหมด', data.U.length, 'users', '#38BDF8', 'user'],
+      ['พนักงาน', data.U.filter((u) => u.r !== 'company').length, 'users', '#38BDF8', 'user'],
+      ['ผู้ใช้บริษัท', data.U.filter((u) => u.r === 'company').length, 'users', '#A78BFA', 'building'],
       ['เปิดใช้งานอยู่', data.U.filter((u) => u.on).length, 'users', G, 'check'],
       ['เอกสารในระบบ', data.D.length, 'apub', '#A78BFA', 'file'],
       ['เผยแพร่แล้ว', n('published'), 'apub', G, 'up'],
